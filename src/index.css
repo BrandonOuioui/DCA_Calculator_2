@@ -1,0 +1,116 @@
+/* ===================================
+   DCA Calculator - 全域樣式
+   使用 Tailwind CSS
+=================================== */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- 自訂基礎樣式 --- */
+@layer base {
+  :root {
+    /* 深色主題色票 */
+    --color-bg-primary: #0f172a;
+    --color-bg-secondary: #1e293b;
+    --color-bg-tertiary: #334155;
+    --color-accent: #38bdf8;
+    --color-accent-hover: #7dd3fc;
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-text-primary: #f8fafc;
+    --color-text-secondary: #94a3b8;
+    --color-border: #475569;
+  }
+
+  body {
+    @apply bg-slate-900 text-slate-100 antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* --- 元件樣式 --- */
+@layer components {
+  /* 卡片容器 */
+  .card {
+    @apply bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6;
+  }
+
+  /* 玻璃擬態效果 */
+  .glass {
+    @apply bg-slate-800/30 backdrop-blur-md border border-slate-700/50;
+  }
+
+  /* 主要按鈕 */
+  .btn-primary {
+    @apply px-6 py-3 bg-gradient-to-r from-sky-500 to-cyan-400 
+           text-slate-900 font-semibold rounded-lg
+           hover:from-sky-400 hover:to-cyan-300
+           transition-all duration-200 ease-out
+           shadow-lg shadow-sky-500/25 hover:shadow-sky-500/40
+           active:scale-95;
+  }
+
+  /* 次要按鈕 */
+  .btn-secondary {
+    @apply px-6 py-3 bg-slate-700 text-slate-200 font-medium rounded-lg
+           hover:bg-slate-600 border border-slate-600
+           transition-all duration-200 ease-out
+           active:scale-95;
+  }
+
+  /* 輸入框 */
+  .input-field {
+    @apply w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg
+           text-slate-100 placeholder-slate-500
+           focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500
+           transition-all duration-200;
+  }
+
+  /* 標籤 */
+  .label {
+    @apply block text-sm font-medium text-slate-300 mb-2;
+  }
+
+  /* 數據指標卡片 */
+  .stat-card {
+    @apply card flex flex-col items-center justify-center text-center;
+  }
+
+  .stat-value {
+    @apply text-3xl font-bold text-sky-400;
+  }
+
+  .stat-label {
+    @apply text-sm text-slate-400 mt-1;
+  }
+}
+
+/* --- 動畫效果 --- */
+@layer utilities {
+  /* 漸層文字 */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-cyan-300;
+  }
+
+  /* 載入中動畫 */
+  .loading-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* 淡入動畫 */
+  .fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
