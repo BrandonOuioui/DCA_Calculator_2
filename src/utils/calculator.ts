@@ -139,27 +139,43 @@ export function runBacktest(
             totalInvested += actualBuyAmount;
         }
 
-        // 6. 記錄交易
-        trades.push({
-            date: currentDate,
-            price: currentPrice,
-            ath: runningAth,
-            drawdown,
-            multiplier,
-            amount: actualBuyAmount,
-            coinsBought,
-            totalCoins,
-            remainingCash,
-            insufficientFunds
-        });
+        // 6. 記錄交易 (僅記錄有實際買入的)
+        if (actualBuyAmount > 0) {
+            trades.push({
+                date: currentDate,
+                price: currentPrice,
+                ath: runningAth,
+                drawdown,
+                multiplier,
+                amount: actualBuyAmount,
+                coinsBought,
+                totalCoins,
+                remainingCash,
+                insufficientFunds
+            });
+        }
     }
 
-    // 7. 計算最終結果
+    // 7. 計算最終結果 (Current / Latest Data)
     const lastPrice = dailyPrices[dailyPrices.length - 1]?.price || 0;
     const finalValue = totalCoins * lastPrice;
+
+    // 計算最後一筆投入當下的結果 (At Last Buy)
+    const lastTrade = trades.length > 0 ? trades[trades.length - 1] : null;
+    const lastBuyPrice = lastTrade ? lastTrade.price : 0;
+
+    // 注意：totalCoins 應該是截止到最後一筆交易時的持倉量。但因為我們只在定投日買入，所以 totalCoins 在最後一筆交易後不會變 (除非這之後還有賣出邏輯，但這裡沒有)。
+    // 所以直接用最終 totalCoins * lastBuyPrice 即可代表「最後一次投入當下的持倉價值」。
+    const finalValueAtLastBuy = totalCoins * lastBuyPrice;
+
     const averagePrice = totalInvested > 0 ? totalInvested / totalCoins : 0;
+
     const roi = totalInvested > 0
         ? ((finalValue - totalInvested) / totalInvested) * 100
+        : 0;
+
+    const roiAtLastBuy = totalInvested > 0
+        ? ((finalValueAtLastBuy - totalInvested) / totalInvested) * 100
         : 0;
 
     return {
@@ -169,6 +185,8 @@ export function runBacktest(
         averagePrice,
         finalValue,
         roi,
+        finalValueAtLastBuy,
+        roiAtLastBuy,
         maxDrawdown: maxDrawdown * 100, // 轉為百分比
         fundsDepleted,
         fundsDepletedDate

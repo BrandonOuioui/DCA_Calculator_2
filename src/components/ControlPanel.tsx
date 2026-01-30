@@ -8,14 +8,17 @@ import { Plus, Trash2, Play, RotateCcw } from 'lucide-react';
 import type { BacktestConfig, DrawdownTier, CoinOption } from '../types';
 import { fetchCoinList } from '../services/api';
 import { getDefaultTiers } from '../utils/calculator';
+import RealTimeCalculator from './RealTimeCalculator';
 
 // LocalStorage Key
 const STORAGE_KEY = 'dca_calculator_config';
 
 interface ControlPanelProps {
     onRunBacktest: (config: BacktestConfig, tiers: DrawdownTier[]) => void;
-    onCoinChange?: (coinId: string) => void; // 幣種變更時觸發
+    onCoinChange?: (coinId: string) => void;
     isLoading: boolean;
+    initialConfig?: BacktestConfig | null;
+    initialTiers?: DrawdownTier[] | null;
 }
 
 /**
@@ -52,7 +55,7 @@ function saveConfig(config: BacktestConfig, tiers: DrawdownTier[]) {
     }
 }
 
-export default function ControlPanel({ onRunBacktest, onCoinChange, isLoading }: ControlPanelProps) {
+export default function ControlPanel({ onRunBacktest, onCoinChange, isLoading, initialConfig, initialTiers }: ControlPanelProps) {
     // 載入已儲存的設定
     const saved = loadConfig();
 
@@ -60,7 +63,7 @@ export default function ControlPanel({ onRunBacktest, onCoinChange, isLoading }:
     const [coins, setCoins] = useState<CoinOption[]>([]);
     const [loadingCoins, setLoadingCoins] = useState(true);
 
-    // 表單狀態
+    // 表單狀態 - 優先使用 initialConfig，否則使用 localStorage
     const [coinId, setCoinId] = useState(saved.config.coinId || 'bitcoin');
     const [startDate, setStartDate] = useState(
         saved.config.startDate
@@ -76,13 +79,30 @@ export default function ControlPanel({ onRunBacktest, onCoinChange, isLoading }:
     // 回撤級距表
     const [tiers, setTiers] = useState<DrawdownTier[]>(saved.tiers);
 
+    // 監聽外部載入的設定 (Load Strategy)
+    useEffect(() => {
+        if (initialConfig && initialTiers) {
+            setCoinId(initialConfig.coinId);
+            setStartDate(initialConfig.startDate.toISOString().split('T')[0]);
+            setInitialCapital(initialConfig.initialCapital);
+            setBaseDcaAmount(initialConfig.baseDcaAmount);
+            setDcaFrequency(initialConfig.dcaFrequency);
+            setTiers(initialTiers);
+
+            // 觸發幣種變更以載入圖表
+            if (onCoinChange) {
+                onCoinChange(initialConfig.coinId);
+            }
+        }
+    }, [initialConfig, initialTiers, onCoinChange]);
+
     // 載入幣種列表
     useEffect(() => {
         fetchCoinList()
             .then(data => {
                 setCoins(data);
-                // 幣種列表載入完成後，自動載入預設幣種的走勢圖
-                if (onCoinChange && data.length > 0) {
+                // 僅在沒有 initialConfig 時才自動載入預設
+                if (!initialConfig && onCoinChange && data.length > 0) {
                     onCoinChange(coinId);
                 }
             })
@@ -286,14 +306,14 @@ export default function ControlPanel({ onRunBacktest, onCoinChange, isLoading }:
                                 <span className="text-slate-500 w-6">{index + 1}.</span>
 
                                 <div className="flex items-center gap-2 flex-1">
-                                    <span className="text-slate-400 text-sm">跌幅 ≤</span>
+                                    <span className="text-slate-400 text-sm">跌幅</span>
                                     <input
                                         type="number"
-                                        min={-90}
-                                        max={0}
+                                        min={0}
+                                        max={100}
                                         step={5}
-                                        value={tier.threshold * 100}
-                                        onChange={e => updateTier(tier.id, 'threshold', Number(e.target.value) / 100)}
+                                        value={Math.abs(tier.threshold * 100)}
+                                        onChange={e => updateTier(tier.id, 'threshold', -(Math.abs(Number(e.target.value)) / 100))}
                                         className="w-20 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-center text-sm"
                                     />
                                     <span className="text-slate-400 text-sm">%</span>
@@ -345,6 +365,13 @@ export default function ControlPanel({ onRunBacktest, onCoinChange, isLoading }:
                     )}
                 </button>
             </form>
+
+            {/* 實時計算機 (獨立區塊) */}
+            <RealTimeCalculator
+                coinId={coinId}
+                baseAmount={baseDcaAmount}
+                tiers={tiers}
+            />
         </div>
     );
 }

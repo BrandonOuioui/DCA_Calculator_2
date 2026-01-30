@@ -49,8 +49,10 @@ export interface BacktestResult {
     totalInvested: number;    // 總投入成本
     totalCoins: number;       // 持倉總量
     averagePrice: number;     // 持倉均價
-    finalValue: number;       // 最終價值
-    roi: number;              // 投報率 (%)
+    finalValue: number;       // 目前最終價值 (Latest Price)
+    roi: number;              // 目前投報率 (Latest Price)
+    finalValueAtLastBuy: number; // 最後一筆投入當下的價值
+    roiAtLastBuy: number;        // 最後一筆投入當下的投報率
     maxDrawdown: number;      // 最大回撤 (%)
     fundsDepleted: boolean;   // 是否資金枯竭
     fundsDepletedDate?: Date; // 資金枯竭日期
@@ -84,4 +86,24 @@ export type ApiStatus = 'idle' | 'loading' | 'success' | 'error';
 export interface ApiError {
     code: string;
     message: string;
+}
+/**
+ * 儲存的策略
+ */
+export interface SavedStrategy {
+    id: string;
+    name: string;
+    created: number; // Timestamp
+    config: BacktestConfig;
+    tiers: DrawdownTier[];
+    result: {
+        roi: number;
+        roiAtLastBuy?: number; // Optional for backward compatibility
+        maxDrawdown: number;
+        finalValue: number;
+        finalValueAtLastBuy?: number; // Optional for backward compatibility
+        totalInvested: number;
+        totalCoins: number; // Added
+        averagePrice: number;
+    };
 }

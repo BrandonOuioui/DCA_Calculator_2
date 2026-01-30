@@ -12,6 +12,7 @@ import ControlPanel from './components/ControlPanel';
 import BacktestChart from './components/BacktestChart';
 import ResultsSummary from './components/ResultsSummary';
 import TradeLog from './components/TradeLog';
+import StrategyComparison from './components/StrategyComparison';
 
 export default function App() {
     // 狀態管理
@@ -20,6 +21,13 @@ export default function App() {
     const [error, setError] = useState<string | null>(null);
     const [prices, setPrices] = useState<PriceDataPoint[]>([]);
     const [result, setResult] = useState<BacktestResult | null>(null);
+    const [standardResult, setStandardResult] = useState<BacktestResult | null>(null);
+
+    // 當前與載入的策略設定
+    const [currentConfig, setCurrentConfig] = useState<BacktestConfig | null>(null);
+    const [currentTiers, setCurrentTiers] = useState<DrawdownTier[] | null>(null);
+    const [loadedConfig, setLoadedConfig] = useState<BacktestConfig | null>(null);
+    const [loadedTiers, setLoadedTiers] = useState<DrawdownTier[] | null>(null);
 
     /**
      * 選擇幣種後載入歷史走勢圖
@@ -31,11 +39,7 @@ export default function App() {
         setResult(null); // 清除舊的回測結果
 
         try {
-            // CoinGecko 免費版限制：最多取約 365 天的資料
-            const now = Math.floor(Date.now() / 1000);
-            const oneYearAgo = now - (365 * 24 * 60 * 60);
-
-            const priceData = await fetchPriceHistory(coinId, oneYearAgo, now);
+            const priceData = await fetchPriceHistory(coinId); // 自動抓取全歷史
             setPrices(priceData);
         } catch (err) {
             const apiError = err as ApiError;
@@ -53,18 +57,29 @@ export default function App() {
     async function handleRunBacktest(config: BacktestConfig, tiers: DrawdownTier[]) {
         setIsLoading(true);
         setError(null);
+        setCurrentConfig(config);
+        setCurrentTiers(tiers);
 
         try {
-            // 1. 取得歷史價格
-            const fromTimestamp = Math.floor(config.startDate.getTime() / 1000);
-            const toTimestamp = Math.floor(config.endDate.getTime() / 1000);
-
-            const priceData = await fetchPriceHistory(config.coinId, fromTimestamp, toTimestamp);
+            // 1. 取得歷史價格 (目前 fetchPriceHistory 會抓全量，這邊傳時間只是備用)
+            // 實際上 api.ts 已經優化為抓全歷史，所以這裡的 config.startDate 不影響資料抓取範圍
+            const priceData = await fetchPriceHistory(config.coinId);
             setPrices(priceData);
 
-            // 2. 執行回測計算
+            // 2. 執行回測計算 (Smart Strategy)
             const backtestResult = runBacktest(priceData, config, tiers);
             setResult(backtestResult);
+
+            // 3. 執行標準 DCA 回測 (Baseline - 無加碼)
+            // 修正邏輯：為了公平比較 ROI，若策略因資金耗盡提早結束，
+            // Benchmark 也應該在同一天結束，以排除「牛市回升時間長度」造成的偏差。
+            let benchmarkConfig = { ...config };
+            if (backtestResult.fundsDepletedDate) {
+                benchmarkConfig.endDate = backtestResult.fundsDepletedDate;
+            }
+
+            const stdResult = runBacktest(priceData, benchmarkConfig, []);
+            setStandardResult(stdResult);
 
         } catch (err) {
             const apiError = err as ApiError;
@@ -74,6 +89,15 @@ export default function App() {
             setIsLoading(false);
         }
     }
+
+    /**
+     * 載入策略
+     */
+    const handleLoadStrategy = (config: BacktestConfig, tiers: DrawdownTier[]) => {
+        setLoadedConfig(config);
+        setLoadedTiers(tiers);
+        // 不自動執行，讓用戶可以先預覽或修改參數
+    };
 
     /**
      * 關閉錯誤提示
@@ -135,10 +159,12 @@ export default function App() {
                             onRunBacktest={handleRunBacktest}
                             onCoinChange={handleCoinChange}
                             isLoading={isLoading}
+                            initialConfig={loadedConfig}
+                            initialTiers={loadedTiers}
                         />
                     </aside>
 
-                    {/* 右側：結果區域 (排版順序: 圖表 -> 結果 -> 交易紀錄) */}
+                    {/* 右側：結果區域 (排版順序: 圖表 -> 結果 -> 策略 -> 交易紀錄) */}
                     <section className="lg:col-span-8 space-y-6">
                         {/* 1. 價格走勢圖 (最上方) */}
                         <div className="fade-in">
@@ -157,7 +183,18 @@ export default function App() {
                             </div>
                         )}
 
-                        {/* 3. 交易紀錄 (最下方) */}
+                        {/* 3. 策略比較與儲存 (新增) */}
+                        <div className="fade-in">
+                            <StrategyComparison
+                                currentConfig={currentConfig}
+                                currentTiers={currentTiers}
+                                currentResult={result}
+                                standardResult={standardResult}
+                                onLoadStrategy={handleLoadStrategy}
+                            />
+                        </div>
+
+                        {/* 4. 交易紀錄 (最下方) */}
                         {result && result.trades.length > 0 && (
                             <div className="fade-in">
                                 <TradeLog trades={result.trades} />

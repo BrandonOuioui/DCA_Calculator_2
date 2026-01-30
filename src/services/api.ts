@@ -132,3 +132,33 @@ export async function fetchPriceHistory(
         throw { code: 'UNKNOWN', message: '無法取得價格資料' };
     }
 }
+
+/**
+ * 取得實時價格與 ATH (用於實時計算機)
+ */
+export async function fetchRealTimeData(coinId: string): Promise<{ currentPrice: number, ath: number }> {
+    try {
+        const url = `${CG_BASE_URL}/coins/markets?vs_currency=usd&ids=${coinId}`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error('API Request Failed');
+        }
+
+        const data = await response.json();
+        if (!data || data.length === 0) {
+            throw new Error('No Data Found');
+        }
+
+        const coinData = data[0];
+        // CoinGecko API 回傳的 ath 是該幣種的歷史最高價
+        // 我們直接使用它，這樣最準確
+        return {
+            currentPrice: coinData.current_price,
+            ath: coinData.ath
+        };
+    } catch (e) {
+        console.error('Fetch Real-time Data Failed', e);
+        throw e;
+    }
+}

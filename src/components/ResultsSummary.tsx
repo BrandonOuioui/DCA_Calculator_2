@@ -28,20 +28,21 @@ function formatCurrency(num: number): string {
 }
 
 export default function ResultsSummary({ result }: ResultsSummaryProps) {
-    const isProfit = result.roi >= 0;
+    // const isProfit = result.roi >= 0; // 移除，改用 result.roiAtLastBuy 判斷
 
     return (
         <div className="card">
             <h2 className="text-xl font-bold text-gradient mb-6">回測結果</h2>
 
             {/* 資金枯竭警告 */}
+            {/* 資金耗盡提示 (中性資訊) */}
             {result.fundsDepleted && (
-                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-3">
-                    <AlertTriangle className="text-red-400 flex-shrink-0 mt-0.5" size={20} />
+                <div className="mb-6 p-4 bg-sky-500/10 border border-sky-500/30 rounded-lg flex items-start gap-3">
+                    <AlertTriangle className="text-sky-400 flex-shrink-0 mt-0.5" size={20} />
                     <div>
-                        <p className="text-red-400 font-medium">資金已耗盡</p>
-                        <p className="text-red-400/70 text-sm mt-1">
-                            於 {result.fundsDepletedDate?.toLocaleDateString('zh-TW')} 資金不足以完成定投
+                        <p className="text-sky-400 font-medium">資金已於 {result.fundsDepletedDate?.toLocaleDateString('zh-TW')} 耗盡</p>
+                        <p className="text-sky-400/70 text-sm mt-1">
+                            隨後的期間將不再進行投入，僅計算持有資產的價值變化。
                         </p>
                     </div>
                 </div>
@@ -50,18 +51,23 @@ export default function ResultsSummary({ result }: ResultsSummaryProps) {
             {/* 指標網格 */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {/* 投報率 */}
-                <div className={`stat-card ${isProfit ? 'border-green-500/30' : 'border-red-500/30'}`}>
-                    <div className={`p-3 rounded-full mb-3 ${isProfit ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-                        {isProfit ? (
+                <div className={`stat-card ${result.roiAtLastBuy >= 0 ? 'border-green-500/30' : 'border-red-500/30'}`}>
+                    <div className={`p-3 rounded-full mb-3 ${result.roiAtLastBuy >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                        {result.roiAtLastBuy >= 0 ? (
                             <TrendingUp className="text-green-400" size={24} />
                         ) : (
                             <TrendingDown className="text-red-400" size={24} />
                         )}
                     </div>
-                    <span className={`stat-value ${isProfit ? 'text-green-400' : 'text-red-400'}`}>
-                        {isProfit ? '+' : ''}{formatNumber(result.roi)}%
+                    <span className={`stat-value ${result.roiAtLastBuy >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {result.roiAtLastBuy >= 0 ? '+' : ''}{formatNumber(result.roiAtLastBuy)}%
                     </span>
-                    <span className="stat-label">投報率 (ROI)</span>
+                    <span className="stat-label flex flex-col items-center">
+                        <span>投報率 (ROI)</span>
+                        <span className="text-[10px] opacity-60 mt-0.5">
+                            現今: {result.roi >= 0 ? '+' : ''}{formatNumber(result.roi)}%
+                        </span>
+                    </span>
                 </div>
 
                 {/* 最終價值 */}
@@ -69,8 +75,18 @@ export default function ResultsSummary({ result }: ResultsSummaryProps) {
                     <div className="p-3 rounded-full mb-3 bg-sky-500/10">
                         <DollarSign className="text-sky-400" size={24} />
                     </div>
-                    <span className="stat-value">{formatCurrency(result.finalValue)}</span>
-                    <span className="stat-label">最終價值</span>
+                    <span className="stat-value">{formatCurrency(result.finalValueAtLastBuy ?? result.finalValue)}</span>
+                    <span className="stat-label flex flex-col items-center">
+                        <span>最終價值</span>
+                        {result.totalCoins > 0 && (
+                            <span className="text-[10px] text-sky-400/80 mt-0.5">
+                                (結算價: {formatCurrency((result.finalValueAtLastBuy ?? result.finalValue) / result.totalCoins)})
+                            </span>
+                        )}
+                        <span className="text-[10px] opacity-60 mt-0.5">
+                            現今: {formatCurrency(result.finalValue)}
+                        </span>
+                    </span>
                 </div>
 
                 {/* 總投入 */}
