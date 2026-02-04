@@ -156,6 +156,7 @@ export default function App() {
                     {/* 左側：控制面板 */}
                     <aside className="lg:col-span-4">
                         <ControlPanel
+                            prices={prices}
                             onRunBacktest={handleRunBacktest}
                             onCoinChange={handleCoinChange}
                             isLoading={isLoading}

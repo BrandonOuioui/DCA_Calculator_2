@@ -4,16 +4,18 @@
 =================================== */
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Play, RotateCcw } from 'lucide-react';
-import type { BacktestConfig, DrawdownTier, CoinOption } from '../types';
+import { Plus, Trash2, Play, RotateCcw, Sparkles, X } from 'lucide-react';
+import type { BacktestConfig, DrawdownTier, CoinOption, PriceDataPoint } from '../types';
 import { fetchCoinList } from '../services/api';
 import { getDefaultTiers } from '../utils/calculator';
 import RealTimeCalculator from './RealTimeCalculator';
+import OptimizerPanel from './OptimizerPanel';
 
 // LocalStorage Key
 const STORAGE_KEY = 'dca_calculator_config';
 
 interface ControlPanelProps {
+    prices: PriceDataPoint[]; // Added prices prop
     onRunBacktest: (config: BacktestConfig, tiers: DrawdownTier[]) => void;
     onCoinChange?: (coinId: string) => void;
     isLoading: boolean;
@@ -55,9 +57,12 @@ function saveConfig(config: BacktestConfig, tiers: DrawdownTier[]) {
     }
 }
 
-export default function ControlPanel({ onRunBacktest, onCoinChange, isLoading, initialConfig, initialTiers }: ControlPanelProps) {
+export default function ControlPanel({ prices, onRunBacktest, onCoinChange, isLoading, initialConfig, initialTiers }: ControlPanelProps) {
     // 載入已儲存的設定
     const saved = loadConfig();
+
+    // 狀態
+    const [showOptimizer, setShowOptimizer] = useState(false);
 
     // 幣種列表
     const [coins, setCoins] = useState<CoinOption[]>([]);
@@ -283,6 +288,15 @@ export default function ControlPanel({ onRunBacktest, onCoinChange, isLoading, i
                         <div className="flex gap-2">
                             <button
                                 type="button"
+                                onClick={() => setShowOptimizer(!showOptimizer)}
+                                className={`p-2 transition-colors rounded ${showOptimizer ? 'bg-amber-500 text-slate-900' : 'text-amber-400 hover:text-amber-300'}`}
+                                title="AI 策略最佳化"
+                            >
+                                <Sparkles size={18} />
+                            </button>
+                            <div className="w-px h-6 bg-slate-700 mx-1"></div>
+                            <button
+                                type="button"
                                 onClick={resetTiers}
                                 className="p-2 text-slate-400 hover:text-slate-200 transition-colors"
                                 title="重置為預設值"
@@ -299,6 +313,33 @@ export default function ControlPanel({ onRunBacktest, onCoinChange, isLoading, i
                             </button>
                         </div>
                     </div>
+
+                    {/* Optimizer Panel (Conditional) */}
+                    {showOptimizer && (
+                        <div className="mb-6 relative">
+                            <button
+                                onClick={() => setShowOptimizer(false)}
+                                className="absolute top-2 right-2 text-slate-500 hover:text-white z-10 p-1"
+                            >
+                                <X size={16} />
+                            </button>
+                            <OptimizerPanel
+                                prices={prices}
+                                currentConfig={{
+                                    coinId,
+                                    startDate: new Date(startDate),
+                                    endDate: new Date(),
+                                    initialCapital,
+                                    baseDcaAmount,
+                                    dcaFrequency
+                                }}
+                                onApplyStrategy={(newTiers) => {
+                                    setTiers(newTiers);
+                                    setShowOptimizer(false);
+                                }}
+                            />
+                        </div>
+                    )}
 
                     <div className="space-y-2">
                         {tiers.map((tier, index) => (
