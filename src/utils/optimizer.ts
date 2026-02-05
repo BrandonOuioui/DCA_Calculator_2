@@ -26,6 +26,11 @@ export interface StrategyGenome {
     genes: number[]; // Array of 16 multipliers
     fitness: number; // ROI
     tiers: DrawdownTier[]; // The actual tiers generated from genes
+    // Cached Stats for UI
+    totalCoins?: number;
+    averagePrice?: number;
+    fundsDepletedDate?: Date;
+    executionDuration?: number;
 }
 
 export interface OptimizationResult {
@@ -194,6 +199,11 @@ export async function runGeneticOptimizer(
             // So ROI will naturally be lower if we run out of cash too early during a dip.
             const result = runBacktest(prices, baseConfig, genome.tiers);
             genome.fitness = result.roi;
+            // Cache additional metrics
+            genome.totalCoins = result.totalCoins;
+            genome.averagePrice = result.averagePrice;
+            genome.fundsDepletedDate = result.fundsDepletedDate;
+            genome.executionDuration = result.executionDuration;
         }
 
         // B. Sort by Fitness (Descending)

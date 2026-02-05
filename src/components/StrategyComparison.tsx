@@ -51,7 +51,8 @@ export default function StrategyComparison({
                 finalValueAtLastBuy: currentResult.finalValueAtLastBuy,
                 totalInvested: currentResult.totalInvested,
                 totalCoins: currentResult.totalCoins,
-                averagePrice: currentResult.averagePrice
+                averagePrice: currentResult.averagePrice,
+                executionDuration: currentResult.executionDuration
             }
         };
 
@@ -124,6 +125,7 @@ export default function StrategyComparison({
                                 <th className="px-4 py-3 text-right">投入成本</th>
                                 <th className="px-4 py-3 text-right">持倉數量</th>
                                 <th className="px-4 py-3 text-right">持倉均價</th>
+                                <th className="px-4 py-3 text-right">執行期間</th>
                                 <th className="px-4 py-3 text-right">最終價值</th>
                                 <th className="px-4 py-3 text-right">ROI</th>
                                 <th className="px-4 py-3 text-right">最大回撤</th>
@@ -157,6 +159,9 @@ export default function StrategyComparison({
                                     </td>
                                     <td className="px-4 py-4 text-right text-slate-300">
                                         ${standardResult.averagePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    </td>
+                                    <td className="px-4 py-4 text-right text-slate-300">
+                                        {standardResult.executionDuration || '-'} 天
                                     </td>
                                     <td className="px-4 py-4 text-right text-slate-200 font-bold">
                                         <div>${(standardResult.finalValueAtLastBuy ?? standardResult.finalValue).toLocaleString()}</div>
@@ -203,6 +208,9 @@ export default function StrategyComparison({
                                     </td>
                                     <td className="px-4 py-4 text-right text-slate-300">
                                         ${s.result.averagePrice?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || '-'}
+                                    </td>
+                                    <td className="px-4 py-4 text-right text-slate-300">
+                                        {s.result.executionDuration || '-'} 天
                                     </td>
                                     <td className="px-4 py-4 text-right text-slate-200 font-bold">
                                         <div>${(s.result.finalValueAtLastBuy ?? s.result.finalValue).toLocaleString()}</div>

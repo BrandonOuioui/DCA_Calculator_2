@@ -337,6 +337,7 @@ export default function ControlPanel({ prices, onRunBacktest, onCoinChange, isLo
                                     setTiers(newTiers);
                                     setShowOptimizer(false);
                                 }}
+                                controlPanelPrice={prices.length > 0 ? prices[prices.length - 1].price : undefined}
                             />
                         </div>
                     )}

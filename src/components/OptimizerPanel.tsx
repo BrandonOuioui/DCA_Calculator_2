@@ -12,9 +12,15 @@ interface OptimizerPanelProps {
     prices: PriceDataPoint[];
     currentConfig: BacktestConfig;
     onApplyStrategy: (tiers: DrawdownTier[]) => void;
+    controlPanelPrice?: number; // Current price for comparison
 }
 
-export default function OptimizerPanel({ prices, currentConfig, onApplyStrategy }: OptimizerPanelProps) {
+export default function OptimizerPanel({
+    prices,
+    currentConfig,
+    onApplyStrategy,
+    controlPanelPrice
+}: OptimizerPanelProps) {
     const [isOptimizing, setIsOptimizing] = useState(false);
     const [progress, setProgress] = useState(0);
     const [generation, setGeneration] = useState(0);
@@ -53,15 +59,6 @@ export default function OptimizerPanel({ prices, currentConfig, onApplyStrategy 
             setProgress(100);
         }
     }
-
-    // Helper to format ROI color
-    const getRoiColor = (roi: number) => {
-        if (roi > 200) return 'text-fuchsia-400';
-        if (roi > 100) return 'text-purple-400';
-        if (roi > 50) return 'text-emerald-400';
-        if (roi > 0) return 'text-teal-400';
-        return 'text-slate-400';
-    };
 
     return (
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 mt-6">
@@ -114,7 +111,7 @@ export default function OptimizerPanel({ prices, currentConfig, onApplyStrategy 
                             </div>
                         )}
 
-                        {topStrategies.map((genome, index) => (
+                        {topStrategies.map((strategy, index) => (
                             <div
                                 key={index}
                                 className="bg-slate-900 border border-slate-700/50 rounded-lg p-3 hover:border-amber-500/30 transition-colors group"
@@ -124,14 +121,43 @@ export default function OptimizerPanel({ prices, currentConfig, onApplyStrategy 
                                         {index === 0 && <Trophy className="text-yellow-400" size={16} />}
                                         <span className="text-slate-300 font-bold">Strategy #{index + 1}</span>
                                     </div>
-                                    <span className={`font-mono font-bold ${getRoiColor(genome.fitness)}`}>
-                                        ROI: {genome.fitness.toFixed(2)}%
-                                    </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 mt-3">
+                                    <div className="bg-slate-900/50 p-2 rounded-lg">
+                                        <div className="text-xs text-slate-400">平均買入價</div>
+                                        <div className="text-sm font-mono text-slate-200">
+                                            ${strategy.averagePrice?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || '-'}
+                                            {controlPanelPrice && strategy.averagePrice && (
+                                                <span className={`ml-1 text-xs ${controlPanelPrice > strategy.averagePrice ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                    ({((controlPanelPrice - strategy.averagePrice) / strategy.averagePrice * 100).toFixed(1)}%)
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-2 rounded-lg">
+                                        <div className="text-xs text-slate-400">囤幣數量</div>
+                                        <div className="text-sm font-mono text-slate-200">
+                                            {strategy.totalCoins?.toLocaleString(undefined, { maximumFractionDigits: 4 }) || '-'}
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-2 rounded-lg">
+                                        <div className="text-xs text-slate-400">執行期間</div>
+                                        <div className="text-sm font-mono text-slate-200">
+                                            {strategy.executionDuration || '-'} 天
+                                            {strategy.fundsDepletedDate && <span className="text-red-400 ml-1 text-xs">(提前耗盡)</span>}
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-2 rounded-lg">
+                                        <div className="text-xs text-slate-400">投資報酬率 (ROI)</div>
+                                        <div className="text-sm font-bold text-emerald-400">
+                                            +{strategy.fitness.toFixed(2)}%
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* Mini Visualization of the Curve */}
                                 <div className="h-8 flex items-end gap-0.5 mb-3 opacity-80">
-                                    {genome.genes.map((val, i) => (
+                                    {strategy.genes.map((val, i) => (
                                         <div
                                             key={i}
                                             className="w-full bg-sky-500/30 rounded-t-sm hover:bg-sky-400 transition-colors"
@@ -142,7 +168,7 @@ export default function OptimizerPanel({ prices, currentConfig, onApplyStrategy 
                                 </div>
 
                                 <button
-                                    onClick={() => onApplyStrategy(genome.tiers)}
+                                    onClick={() => onApplyStrategy(strategy.tiers)}
                                     className="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs font-bold rounded flex items-center justify-center gap-1.5 transition-colors"
                                 >
                                     <Check size={14} />

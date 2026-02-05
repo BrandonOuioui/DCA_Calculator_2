@@ -116,6 +116,17 @@ export default function ResultsSummary({ result }: ResultsSummaryProps) {
                     <span className="stat-label">持倉均價</span>
                 </div>
 
+                {/* 執行期間 */}
+                <div className="stat-card">
+                    <div className="p-3 rounded-full mb-3 bg-slate-500/10">
+                        <Coins className="text-slate-400" size={24} />
+                    </div>
+                    <span className="stat-value text-slate-300">
+                        {result.executionDuration || '-'} <span className="text-sm font-normal text-slate-500">天</span>
+                    </span>
+                    <span className="stat-label">執行期間</span>
+                </div>
+
                 {/* 最大回撤 */}
                 <div className="stat-card border-orange-500/30">
                     <div className="p-3 rounded-full mb-3 bg-orange-500/10">

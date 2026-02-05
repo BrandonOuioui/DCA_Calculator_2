@@ -56,6 +56,7 @@ export interface BacktestResult {
     maxDrawdown: number;      // 最大回撤 (%)
     fundsDepleted: boolean;   // 是否資金枯竭
     fundsDepletedDate?: Date; // 資金枯竭日期
+    executionDuration: number; // Days until depleted or finished
 }
 
 /**
@@ -105,5 +106,6 @@ export interface SavedStrategy {
         totalInvested: number;
         totalCoins: number; // Added
         averagePrice: number;
+        executionDuration?: number; // Added
     };
 }

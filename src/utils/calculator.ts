@@ -178,6 +178,9 @@ export function runBacktest(
         ? ((finalValueAtLastBuy - totalInvested) / totalInvested) * 100
         : 0;
 
+    const effectiveEndDate = fundsDepletedDate || (dailyPrices.length > 0 ? new Date(dailyPrices[dailyPrices.length - 1].timestamp) : new Date());
+    const executionDuration = Math.max(0, Math.floor((effectiveEndDate.getTime() - startTimestamp) / (1000 * 60 * 60 * 24)));
+
     return {
         trades,
         totalInvested,
@@ -189,7 +192,8 @@ export function runBacktest(
         roiAtLastBuy,
         maxDrawdown: maxDrawdown * 100, // 轉為百分比
         fundsDepleted,
-        fundsDepletedDate
+        fundsDepletedDate,
+        executionDuration
     };
 }
 
