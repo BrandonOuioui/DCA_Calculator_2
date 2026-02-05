@@ -42,7 +42,11 @@ export function getMultiplier(drawdown: number, tiers: DrawdownTier[]): number {
  * 將價格資料按日聚合
  * CoinGecko 可能回傳多筆同一天的資料，取每日最後一筆
  */
-function aggregateDailyPrices(prices: PriceDataPoint[]): PriceDataPoint[] {
+/**
+ * 將價格資料按日聚合
+ * CoinGecko 可能回傳多筆同一天的資料，取每日最後一筆
+ */
+export function aggregateDailyPrices(prices: PriceDataPoint[]): PriceDataPoint[] {
     const dailyMap = new Map<string, PriceDataPoint>();
 
     for (const point of prices) {
@@ -56,6 +60,11 @@ function aggregateDailyPrices(prices: PriceDataPoint[]): PriceDataPoint[] {
         .sort((a, b) => a.timestamp - b.timestamp);
 }
 
+export interface BacktestOptions {
+    liteMode?: boolean;       // 若為 true，不記錄詳細交易明細 (節省記憶體)
+    preAggregated?: boolean;  // 若為 true，跳過每日聚合步驟 (節省運算)
+}
+
 /**
  * 主回測函式
  * 核心邏輯：每個定投日計算 ATH、跌幅、倍率，執行買入
@@ -63,10 +72,13 @@ function aggregateDailyPrices(prices: PriceDataPoint[]): PriceDataPoint[] {
 export function runBacktest(
     prices: PriceDataPoint[],
     config: BacktestConfig,
-    tiers: DrawdownTier[]
+    tiers: DrawdownTier[],
+    options: BacktestOptions = {}
 ): BacktestResult {
-    // 1. 聚合每日價格
-    const dailyPrices = aggregateDailyPrices(prices);
+    // 1. 聚合每日價格 (若已聚合過則跳過)
+    const dailyPrices = options.preAggregated
+        ? prices
+        : aggregateDailyPrices(prices);
 
     // 2. 初始化狀態
     let runningAth = 0;           // 動態 ATH
@@ -76,8 +88,10 @@ export function runBacktest(
     let maxDrawdown = 0;          // 最大回撤
     let fundsDepleted = false;
     let fundsDepletedDate: Date | undefined;
+    let lastBuyPrice = 0;         // 追蹤最後一次買入價格 (Lite Mode 需要)
 
-    const trades: TradeRecord[] = [];
+    // Lite Mode: 若開啟，則不初始化 trades 陣列以節省記憶體
+    const trades: TradeRecord[] = options.liteMode ? [] : [];
 
     // 計算定投日 (從第一天開始，每 N 天一次)
     const startTimestamp = config.startDate.getTime();
@@ -137,10 +151,11 @@ export function runBacktest(
             remainingCash -= actualBuyAmount;
             totalCoins += coinsBought;
             totalInvested += actualBuyAmount;
+            lastBuyPrice = currentPrice; // 更新最後買入價
         }
 
-        // 6. 記錄交易 (僅記錄有實際買入的)
-        if (actualBuyAmount > 0) {
+        // 6. 記錄交易 (僅記錄有實際買入的，且 Lite Mode 關閉時)
+        if (!options.liteMode && actualBuyAmount > 0) {
             trades.push({
                 date: currentDate,
                 price: currentPrice,
@@ -161,11 +176,7 @@ export function runBacktest(
     const finalValue = totalCoins * lastPrice;
 
     // 計算最後一筆投入當下的結果 (At Last Buy)
-    const lastTrade = trades.length > 0 ? trades[trades.length - 1] : null;
-    const lastBuyPrice = lastTrade ? lastTrade.price : 0;
-
-    // 注意：totalCoins 應該是截止到最後一筆交易時的持倉量。但因為我們只在定投日買入，所以 totalCoins 在最後一筆交易後不會變 (除非這之後還有賣出邏輯，但這裡沒有)。
-    // 所以直接用最終 totalCoins * lastBuyPrice 即可代表「最後一次投入當下的持倉價值」。
+    // 依賴 lastBuyPrice 變數，不需要 trades 陣列
     const finalValueAtLastBuy = totalCoins * lastBuyPrice;
 
     const averagePrice = totalInvested > 0 ? totalInvested / totalCoins : 0;
@@ -182,7 +193,7 @@ export function runBacktest(
     const executionDuration = Math.max(0, Math.floor((effectiveEndDate.getTime() - startTimestamp) / (1000 * 60 * 60 * 24)));
 
     return {
-        trades,
+        trades, // Lite Mode 時為空陣列
         totalInvested,
         totalCoins,
         averagePrice,
