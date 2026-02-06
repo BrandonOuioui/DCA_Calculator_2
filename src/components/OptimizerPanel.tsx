@@ -140,10 +140,17 @@ export default function OptimizerPanel({
                                             {strategy.totalCoins?.toLocaleString(undefined, { maximumFractionDigits: 4 }) || '-'}
                                         </div>
                                     </div>
-                                    <div className="bg-slate-900/50 p-2 rounded-lg">
+                                    <div className="bg-slate-900/50 p-2 rounded-lg col-span-2">
                                         <div className="text-xs text-slate-400">執行期間</div>
                                         <div className="text-sm font-mono text-slate-200">
-                                            {strategy.executionDuration || '-'} 天
+                                            {strategy.executionStartDate && strategy.executionEndDate ? (
+                                                <span>
+                                                    {strategy.executionStartDate.toLocaleDateString('zh-TW')} ~ {strategy.executionEndDate.toLocaleDateString('zh-TW')}
+                                                    <span className="text-xs text-slate-500 ml-2">({strategy.executionDuration} 天)</span>
+                                                </span>
+                                            ) : (
+                                                '-'
+                                            )}
                                             {strategy.fundsDepletedDate && <span className="text-red-400 ml-1 text-xs">(提前耗盡)</span>}
                                         </div>
                                     </div>

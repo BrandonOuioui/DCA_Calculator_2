@@ -161,7 +161,19 @@ export default function StrategyComparison({
                                         ${standardResult.averagePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                     </td>
                                     <td className="px-4 py-4 text-right text-slate-300">
-                                        {standardResult.executionDuration || '-'} 天
+                                        {standardResult.executionStartDate && standardResult.executionEndDate ? (
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-xs text-slate-400">
+                                                    {standardResult.executionStartDate.toLocaleDateString('zh-TW')} ~
+                                                </span>
+                                                <span className="text-xs text-slate-400">
+                                                    {standardResult.executionEndDate.toLocaleDateString('zh-TW')}
+                                                </span>
+                                                <span className="text-slate-200">({standardResult.executionDuration} 天)</span>
+                                            </div>
+                                        ) : (
+                                            <span>{standardResult.executionDuration || '-'} 天</span>
+                                        )}
                                     </td>
                                     <td className="px-4 py-4 text-right text-slate-200 font-bold">
                                         <div>${(standardResult.finalValueAtLastBuy ?? standardResult.finalValue).toLocaleString()}</div>
@@ -210,7 +222,19 @@ export default function StrategyComparison({
                                         ${s.result.averagePrice?.toLocaleString(undefined, { maximumFractionDigits: 2 }) || '-'}
                                     </td>
                                     <td className="px-4 py-4 text-right text-slate-300">
-                                        {s.result.executionDuration || '-'} 天
+                                        {s.result.executionStartDate && s.result.executionEndDate ? (
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-xs text-slate-400">
+                                                    {new Date(s.result.executionStartDate).toLocaleDateString('zh-TW')} ~
+                                                </span>
+                                                <span className="text-xs text-slate-400">
+                                                    {new Date(s.result.executionEndDate).toLocaleDateString('zh-TW')}
+                                                </span>
+                                                <span className="text-slate-200">({s.result.executionDuration} 天)</span>
+                                            </div>
+                                        ) : (
+                                            <span>{s.result.executionDuration || '-'} 天</span>
+                                        )}
                                     </td>
                                     <td className="px-4 py-4 text-right text-slate-200 font-bold">
                                         <div>${(s.result.finalValueAtLastBuy ?? s.result.finalValue).toLocaleString()}</div>

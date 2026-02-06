@@ -191,6 +191,8 @@ export function runBacktest(
 
     const effectiveEndDate = fundsDepletedDate || (dailyPrices.length > 0 ? new Date(dailyPrices[dailyPrices.length - 1].timestamp) : new Date());
     const executionDuration = Math.max(0, Math.floor((effectiveEndDate.getTime() - startTimestamp) / (1000 * 60 * 60 * 24)));
+    const executionStartDate = new Date(startTimestamp);
+    const executionEndDate = effectiveEndDate;
 
     return {
         trades, // Lite Mode 時為空陣列
@@ -204,7 +206,9 @@ export function runBacktest(
         maxDrawdown: maxDrawdown * 100, // 轉為百分比
         fundsDepleted,
         fundsDepletedDate,
-        executionDuration
+        executionDuration,
+        executionStartDate,
+        executionEndDate
     };
 }
 

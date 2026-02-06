@@ -57,6 +57,8 @@ export interface BacktestResult {
     fundsDepleted: boolean;   // 是否資金枯竭
     fundsDepletedDate?: Date; // 資金枯竭日期
     executionDuration: number; // Days until depleted or finished
+    executionStartDate: Date;  // 實際開始執行日期
+    executionEndDate: Date;    // 實際結束執行日期 (或資金耗盡日)
 }
 
 /**
@@ -107,5 +109,7 @@ export interface SavedStrategy {
         totalCoins: number; // Added
         averagePrice: number;
         executionDuration?: number; // Added
+        executionStartDate?: Date; // Added
+        executionEndDate?: Date;   // Added
     };
 }

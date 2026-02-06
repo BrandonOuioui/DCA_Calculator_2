@@ -17,6 +17,8 @@ export interface StrategyGenome {
     averagePrice?: number;
     fundsDepletedDate?: Date;
     executionDuration?: number;
+    executionStartDate?: Date;
+    executionEndDate?: Date;
 }
 
 export interface OptimizationResult {
@@ -138,7 +140,10 @@ export async function runGeneticOptimizer(
                 genome.totalCoins = result.totalCoins;
                 genome.averagePrice = result.averagePrice;
                 genome.fundsDepletedDate = result.fundsDepletedDate;
+                genome.fundsDepletedDate = result.fundsDepletedDate;
                 genome.executionDuration = result.executionDuration;
+                genome.executionStartDate = result.executionStartDate;
+                genome.executionEndDate = result.executionEndDate;
             }
 
             // Yield to main thread every batch to keep UI responsive
