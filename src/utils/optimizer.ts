@@ -8,7 +8,6 @@ import type { BacktestConfig, PriceDataPoint, DrawdownTier } from '../types';
 import { runBacktest, aggregateDailyPrices } from './calculator';
 
 // --- Types ---
-// ... (StrategyGenome, OptimizationResult interfaces remain unchanged)
 export interface StrategyGenome {
     genes: number[];
     fitness: number;
@@ -17,12 +16,15 @@ export interface StrategyGenome {
     averagePrice?: number;
     fundsDepletedDate?: Date;
     executionDuration?: number;
+    executionStartDate?: Date; // Added
+    executionEndDate?: Date;   // Added
+    labels?: string[];         // Added: e.g. ["Highest ROI", "Most Accumulated"]
 }
 
 export interface OptimizationResult {
     bestGenome: StrategyGenome;
     generationsRun: number;
-    topStrategies: StrategyGenome[];
+    topStrategies: StrategyGenome[]; // Will return [MaxROI, MaxCoins, MinPrice]
 }
 
 // --- Constants ---
@@ -32,7 +34,7 @@ const MUTATION_RATE = 0.1;
 const ELITISM_COUNT = 50;
 const BATCH_SIZE = 50; // New: Process 50 genomes per chunk
 
-// Steps mapping... (STEPS_MAPPING remains unchanged)
+// Steps mapping...
 const STEPS_MAPPING = [
     [-5, -10, -15],
     [-20], [-25], [-30], [-35],
@@ -139,6 +141,8 @@ export async function runGeneticOptimizer(
                 genome.averagePrice = result.averagePrice;
                 genome.fundsDepletedDate = result.fundsDepletedDate;
                 genome.executionDuration = result.executionDuration;
+                genome.executionStartDate = result.executionStartDate;
+                genome.executionEndDate = result.executionEndDate;
             }
 
             // Yield to main thread every batch to keep UI responsive
@@ -150,7 +154,7 @@ export async function runGeneticOptimizer(
             onProgress((gen / GENERATIONS) * 100, gen + 1);
         }
 
-        // B. Sort by Fitness (Descending)
+        // B. Sort by Fitness (Descending) for evolution purposes
         population.sort((a, b) => b.fitness - a.fitness);
 
         // C. Elitism: Keep top performers immediately
@@ -177,29 +181,59 @@ export async function runGeneticOptimizer(
         population = nextGen;
     }
 
-    // Final Sort
-    population.sort((a, b) => b.fitness - a.fitness);
+    // --- Final Selection: Pick the 3 Champions ---
 
-    // Deduplicate to find distinct top strategies
-    const uniqueStrategies: StrategyGenome[] = [];
-    const seenGenes = new Set<string>();
+    // Helper to get unique signature
+    const getSig = (g: StrategyGenome) => g.genes.map(x => x.toFixed(1)).join('|');
+    const selectedSignatures = new Set<string>();
+    const topStrategies: StrategyGenome[] = [];
 
-    for (const genome of population) {
-        // Create a unique signature for the genes
-        const signature = genome.genes.map(g => g.toFixed(1)).join('|');
+    // 1. Champion: Max Coins (User's Preference)
+    const sortedByCoins = [...population].sort((a, b) => (b.totalCoins || 0) - (a.totalCoins || 0));
+    const maxCoinsStrat = sortedByCoins[0];
+    if (maxCoinsStrat) {
+        maxCoinsStrat.labels = ["Most Accumulated"];
+        topStrategies.push(maxCoinsStrat);
+        selectedSignatures.add(getSig(maxCoinsStrat));
+    }
 
-        if (!seenGenes.has(signature)) {
-            seenGenes.add(signature);
-            uniqueStrategies.push(genome);
-        }
+    // 2. Champion: Max ROI
+    const sortedByRoi = [...population].sort((a, b) => b.fitness - a.fitness);
+    let maxRoiStrat = sortedByRoi.find(g => !selectedSignatures.has(getSig(g)));
 
-        // Stop once we have enough unique top strategies
-        if (uniqueStrategies.length >= 3) break;
+    // Fallback: if no distinct strategy found, take the next best coins one (rare)
+    if (!maxRoiStrat) {
+        maxRoiStrat = sortedByCoins.find(g => !selectedSignatures.has(getSig(g)));
+    }
+
+    if (maxRoiStrat) {
+        maxRoiStrat.labels = ["Highest ROI"];
+        topStrategies.push(maxRoiStrat);
+        selectedSignatures.add(getSig(maxRoiStrat));
+    }
+
+    // 3. Champion: Min Average Price
+    // Filter out 0 price (failed/no buy strategies)
+    const sortedByPrice = [...population]
+        .filter(g => (g.averagePrice || 0) > 0)
+        .sort((a, b) => (a.averagePrice || 0) - (b.averagePrice || 0));
+
+    let minPriceStrat = sortedByPrice.find(g => !selectedSignatures.has(getSig(g)));
+
+    // Fallback
+    if (!minPriceStrat) {
+        minPriceStrat = sortedByCoins.find(g => !selectedSignatures.has(getSig(g)));
+    }
+
+    if (minPriceStrat) {
+        minPriceStrat.labels = ["Lowest Avg Price"];
+        topStrategies.push(minPriceStrat);
+        selectedSignatures.add(getSig(minPriceStrat));
     }
 
     return {
-        bestGenome: uniqueStrategies[0],
+        bestGenome: maxCoinsStrat || population[0], // MAX COINS IS THE BEST GENOME
         generationsRun: GENERATIONS,
-        topStrategies: uniqueStrategies
+        topStrategies: topStrategies
     };
 }

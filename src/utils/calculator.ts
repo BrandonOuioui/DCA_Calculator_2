@@ -190,6 +190,8 @@ export function runBacktest(
         : 0;
 
     const effectiveEndDate = fundsDepletedDate || (dailyPrices.length > 0 ? new Date(dailyPrices[dailyPrices.length - 1].timestamp) : new Date());
+    const effectiveStartDate = dailyPrices.length > 0 ? new Date(startTimestamp) : new Date(); // Use actual start timestamp or now fallback
+
     const executionDuration = Math.max(0, Math.floor((effectiveEndDate.getTime() - startTimestamp) / (1000 * 60 * 60 * 24)));
 
     return {
@@ -204,7 +206,9 @@ export function runBacktest(
         maxDrawdown: maxDrawdown * 100, // 轉為百分比
         fundsDepleted,
         fundsDepletedDate,
-        executionDuration
+        executionDuration,
+        executionStartDate: effectiveStartDate,
+        executionEndDate: effectiveEndDate
     };
 }
 

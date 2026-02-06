@@ -3,7 +3,7 @@
    顯示關鍵指標卡片
 =================================== */
 
-import { TrendingUp, TrendingDown, Coins, DollarSign, PiggyBank, AlertTriangle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Coins, DollarSign, PiggyBank, AlertTriangle, Calendar } from 'lucide-react';
 import type { BacktestResult } from '../types';
 
 interface ResultsSummaryProps {
@@ -119,12 +119,22 @@ export default function ResultsSummary({ result }: ResultsSummaryProps) {
                 {/* 執行期間 */}
                 <div className="stat-card">
                     <div className="p-3 rounded-full mb-3 bg-slate-500/10">
-                        <Coins className="text-slate-400" size={24} />
+                        <Calendar className="text-slate-400" size={24} />
                     </div>
-                    <span className="stat-value text-slate-300">
-                        {result.executionDuration || '-'} <span className="text-sm font-normal text-slate-500">天</span>
-                    </span>
-                    <span className="stat-label">執行期間</span>
+                    <div className="flex flex-col items-center">
+                        <span className="text-base font-bold text-slate-200">
+                            {result.executionStartDate && result.executionEndDate ? (
+                                <>
+                                    {result.executionStartDate.toLocaleDateString('zh-TW')}
+                                    <span className="text-slate-500 mx-1">~</span>
+                                    {result.executionEndDate.toLocaleDateString('zh-TW')}
+                                </>
+                            ) : '-'}
+                        </span>
+                        <span className="stat-label mt-1">
+                            執行期間 ({result.executionDuration || '-'} 天)
+                        </span>
+                    </div>
                 </div>
 
                 {/* 最大回撤 */}

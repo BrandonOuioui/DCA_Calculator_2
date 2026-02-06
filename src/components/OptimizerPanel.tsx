@@ -119,7 +119,11 @@ export default function OptimizerPanel({
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2">
                                         {index === 0 && <Trophy className="text-yellow-400" size={16} />}
-                                        <span className="text-slate-300 font-bold">Strategy #{index + 1}</span>
+                                        <span className="text-slate-300 font-bold">
+                                            {strategy.labels && strategy.labels.length > 0
+                                                ? strategy.labels[0]
+                                                : `Strategy #${index + 1}`}
+                                        </span>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 mt-3">
@@ -140,14 +144,21 @@ export default function OptimizerPanel({
                                             {strategy.totalCoins?.toLocaleString(undefined, { maximumFractionDigits: 4 }) || '-'}
                                         </div>
                                     </div>
-                                    <div className="bg-slate-900/50 p-2 rounded-lg">
+                                    <div className="bg-slate-900/50 p-2 rounded-lg col-span-2">
                                         <div className="text-xs text-slate-400">執行期間</div>
                                         <div className="text-sm font-mono text-slate-200">
-                                            {strategy.executionDuration || '-'} 天
+                                            {strategy.executionStartDate && strategy.executionEndDate ? (
+                                                <span>
+                                                    {strategy.executionStartDate.toLocaleDateString('zh-TW')} ~ {strategy.executionEndDate.toLocaleDateString('zh-TW')}
+                                                    <span className="text-xs text-slate-500 ml-2">({strategy.executionDuration} 天)</span>
+                                                </span>
+                                            ) : (
+                                                '-'
+                                            )}
                                             {strategy.fundsDepletedDate && <span className="text-red-400 ml-1 text-xs">(提前耗盡)</span>}
                                         </div>
                                     </div>
-                                    <div className="bg-slate-900/50 p-2 rounded-lg">
+                                    <div className="bg-slate-900/50 p-2 rounded-lg col-span-2">
                                         <div className="text-xs text-slate-400">投資報酬率 (ROI)</div>
                                         <div className="text-sm font-bold text-emerald-400">
                                             +{strategy.fitness.toFixed(2)}%
